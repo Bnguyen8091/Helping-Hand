@@ -27,8 +27,6 @@ Add tickets to FAQ - Brian
 
 View Metrics - Brevory
 
-Edit Tickets - Brevory
-
 Managers create users - Price
 
 Sprint 3
