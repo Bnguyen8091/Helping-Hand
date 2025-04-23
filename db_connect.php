@@ -3,7 +3,7 @@
 
 $server   = "localhost";
 $username = "root";
-$password = "CHANGEMETOYOURSQLSERVERPASS";
+$password = "";
 $dbname   = "helping_hand";
 
 $mysqli = new mysqli($server, $username, $password, $dbname);

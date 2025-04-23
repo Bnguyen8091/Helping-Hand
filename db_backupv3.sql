@@ -61,8 +61,12 @@ CREATE TABLE `Tickets` (
     priority ENUM('Low','Medium','High') NOT NULL DEFAULT 'High',
     Status ENUM('Open','Closed') NOT NULL DEFAULT 'Open',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FAQ TINYINT(1) NOT NULL DEFAULT 0  -- ✅ Added for FAQ functionality
+    FAQ TINYINT(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Add resolved_at column for metrics tracking
+ALTER TABLE `Tickets`
+ADD `resolved_at` TIMESTAMP NULL DEFAULT NULL;
 
 -- Dumping data for table `Tickets`
 

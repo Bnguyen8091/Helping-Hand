@@ -80,7 +80,7 @@ $closed = 'closed';
 
 // Close the ticket (optional toggle)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['close_ticket']) && $userdata['AccessLevel'] === 'Support') {
-    $stmt = $mysqli->prepare("UPDATE tickets SET Status = 'Closed' WHERE ID = ?");
+    $stmt = $mysqli->prepare("UPDATE Tickets SET Status = 'Closed', resolved_at = NOW() WHERE ID = ?");
     if (!$stmt) {
         die("Close ticket prepare failed: " . $mysqli->error);
     }

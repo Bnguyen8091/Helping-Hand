@@ -31,29 +31,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
 
         $stmt = $mysqli->prepare("
-            INSERT INTO tickets (created_by, assigned_to, subject, description, priority) 
-            VALUES (:created_by, :assigned_to, :subject, :description, :priority)
+            INSERT INTO Tickets (created_by, assigned_to, subject, description, priority) 
+            VALUES (?, ?, ?, ?, ?)
         ");
         $stmt->execute([
-            ':created_by' => $createdBy,
-            ':assigned_to' => $assignedTo,
-            ':subject'     => $subject,
-            ':description' => $description,
-            ':priority'    => $priority
+            $createdBy,
+            $assignedTo,
+            $subject,
+            $description,
+            $priority
         ]);
 
-        $ticketId = $mysqli->lastInsertId();
-        $sql2 = "INSERT INTO ticketusers (TicketID, UserID) VALUES (:ticket_id, :user_id)";
+        $ticketId = $mysqli->insert_id;
+        $sql2 = "INSERT INTO TicketUsers (TicketID, UserID) VALUES (?, ?)";
         $stmt2 = $mysqli->prepare($sql2);
         $stmt2->execute([
-            ':ticket_id' => $ticketId,
-            ':user_id'   => $createdBy
+            $ticketId,
+            $createdBy
         ]);
 
         if ($assignedTo) {
             $stmt2->execute([
-                ':ticket_id' => $ticketId,
-                ':user_id'   => $assignedTo
+                $ticketId,
+                $assignedTo
             ]);
         }
 
@@ -63,6 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "Error creating ticket: " . $e->getMessage();
     }
 }
+
+// Get list of clients
+$users_query = "SELECT * FROM Users WHERE AccessLevel = 'Client'";
+$stmt = $mysqli->prepare($users_query);
+$stmt->execute();
+$clients = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -89,8 +95,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <?php if ($userRole === 'Support'): ?>
         <!-- Let support user create on behalf of a client -->
-        <label for="client_id">Client ID (on behalf of):</label><br>
-        <input type="number" name="client_id" id="client_id" placeholder="E.g., 123"><br><br>
+        <label for="client_id">Client Name(on behalf of):</label><br>
+        <select name="client_id" id="client_id">
+            <?php
+            while ($row = $clients->fetch_assoc()) {
+                echo "<option value=" . $row["ID"] . ">" .
+                $row["FirstName"] . " " . $row["LastName"] .
+                "</option>";
+            }
+            ?>
+        </select>
+        <br><br>
     <?php endif; ?>
 
     <button type="submit">Create Ticket</button>

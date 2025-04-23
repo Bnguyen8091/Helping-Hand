@@ -1,15 +1,48 @@
 <?php
 session_start();
 
-// Ensure user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
-
-// Ensure user is Manager or Support to view metrics
 if ($_SESSION['role'] !== 'Manage' && $_SESSION['role'] !== 'Support') {
     die("You do not have permission to view metrics.");
+}
+
+require_once 'db_connect.php';
+
+// 1. Get resolution time for last 4 resolved tickets
+$resolutionLabels = [];
+$resolutionTimes = [];
+$resQuery = "SELECT ID, TIMESTAMPDIFF(MINUTE, created_at, resolved_at) AS minutes
+             FROM Tickets
+             WHERE resolved_at IS NOT NULL
+             ORDER BY resolved_at DESC
+             LIMIT 4";
+$resResult = mysqli_query($mysqli, $resQuery);
+if (!$resResult) {
+    die("Resolution time query failed: " . mysqli_error($conn));
+}
+while ($row = mysqli_fetch_assoc($resResult)) {
+    $resolutionLabels[] = "Ticket #" . $row['ID'];
+    $resolutionTimes[] = (int)$row['minutes'];
+}
+
+// 2. Get monthly ticket volume (last 6 months)
+$ticketMonths = [];
+$ticketVolume = [];
+$volQuery = "SELECT DATE_FORMAT(created_at, '%b') AS month, COUNT(*) AS total
+             FROM Tickets
+             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+             GROUP BY month
+             ORDER BY month";
+$volResult = mysqli_query($mysqli, $volQuery);
+if (!$volResult) {
+    die("Monthly volume query failed: " . mysqli_error($conn));
+}
+while ($row = mysqli_fetch_assoc($volResult)) {
+    $ticketMonths[] = $row['month'];
+    $ticketVolume[] = (int)$row['total'];
 }
 ?>
 <!DOCTYPE html>
@@ -17,19 +50,15 @@ if ($_SESSION['role'] !== 'Manage' && $_SESSION['role'] !== 'Support') {
 <head>
     <meta charset="UTF-8">
     <title>Metrics</title>
-    <!-- Load Chart.js from a CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        .chart-container {
-            width: 500px;
-            margin-bottom: 40px;
-        }
+        .chart-container { width: 500px; margin-bottom: 40px; }
     </style>
 </head>
 <body>
     <h1>Metrics</h1>
-    
+
     <div class="chart-container">
         <h2>Resolution Time (Last 4 Tickets)</h2>
         <canvas id="resolutionTimeChart"></canvas>
@@ -40,62 +69,40 @@ if ($_SESSION['role'] !== 'Manage' && $_SESSION['role'] !== 'Support') {
         <canvas id="chartTwo"></canvas>
     </div>
 
-    <div class="chart-container">
-        <h2>Tickets Per Category</h2>
-        <canvas id="chartThree"></canvas>
-    </div>
-
-    <p><a href="dashboard.php">Back to Dashboard</a></p>
+    <form action="dashboard.php" method="get" style="display:inline; margin-top: 15px;">
+        <button type="submit">⬅ Back to Dashboard</button>
+    </form>
 
     <script>
-        // 1) RESOLUTION TIME - Bar Chart
-        const ctx1 = document.getElementById('resolutionTimeChart').getContext('2d');
-        const resolutionTimeChart = new Chart(ctx1, {
+        const resolutionLabels = <?php echo json_encode($resolutionLabels); ?>;
+        const resolutionTimes = <?php echo json_encode($resolutionTimes); ?>;
+        const ticketMonths = <?php echo json_encode($ticketMonths); ?>;
+        const ticketVolume = <?php echo json_encode($ticketVolume); ?>;
+
+        new Chart(document.getElementById('resolutionTimeChart'), {
             type: 'bar',
             data: {
-                labels: ['Ticket #101', 'Ticket #102', 'Ticket #103', 'Ticket #104'],
+                labels: resolutionLabels,
                 datasets: [{
-                    label: 'Resolution Time (Hours)',
-                    data: [4, 8, 2, 6],
+                    label: 'Resolution Time (Minutes)',
+                    data: resolutionTimes,
                     backgroundColor: 'rgba(54, 162, 235, 0.6)'
                 }]
             }
         });
 
-        // 2) MONTHLY TICKET VOLUME - Line Chart
-        const ctx2 = document.getElementById('chartTwo').getContext('2d');
-        const chartTwo = new Chart(ctx2, {
+        new Chart(document.getElementById('chartTwo'), {
             type: 'line',
             data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                labels: ticketMonths,
                 datasets: [{
                     label: 'Tickets Submitted',
-                    data: [45, 60, 50, 70, 65, 55],
+                    data: ticketVolume,
                     borderColor: 'rgba(255, 99, 132, 1)',
                     fill: false
                 }]
             }
         });
-
-        // 3) TICKETS PER CATEGORY - Pie Chart
-        const ctx3 = document.getElementById('chartThree').getContext('2d');
-        const chartThree = new Chart(ctx3, {
-            type: 'pie',
-            data: {
-                labels: ['Software Bug', 'Access Request', 'Hardware Issue', 'Other'],
-                datasets: [{
-                    label: 'Tickets by Category',
-                    data: [35, 25, 20, 20],
-                    backgroundColor: [
-                        'rgba(255, 206, 86, 0.6)',
-                        'rgba(75, 192, 192, 0.6)',
-                        'rgba(153, 102, 255, 0.6)',
-                        'rgba(255, 99, 132, 0.6)'
-                    ]
-                }]
-            }
-        });
     </script>
-
 </body>
 </html>

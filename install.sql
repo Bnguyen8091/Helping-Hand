@@ -52,6 +52,9 @@ CREATE TABLE `Tickets` (
     FAQ TINYINT(1) NOT NULL DEFAULT 0  -- ✅ Added for FAQ functionality
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- Add resolved_at column for metrics tracking
+ALTER TABLE `Tickets`
+ADD `resolved_at` TIMESTAMP NULL DEFAULT NULL;
 
 
 -- --------------------------------------------------------
