@@ -21,12 +21,21 @@ $user_result = $stmt->get_result();
 $userdata = $user_result->fetch_assoc();
 
 // Get list of tickets based on user
-$tickets_query = "SELECT * FROM tickets, ticketusers WHERE (tickets.ID = ticketusers.TicketID) AND tickets.Status = 'Open' AND ticketusers.UserID = ?";
-$stmt = $mysqli->prepare($tickets_query);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$tickets = $stmt->get_result();
+if ($userdata['AccessLevel'] === 'Client'):
+    $tickets_query = "SELECT * FROM tickets, ticketusers WHERE (tickets.ID = ticketusers.TicketID) AND tickets.Status = 'Open' AND ticketusers.UserID = ?";
+    $stmt = $mysqli->prepare($tickets_query);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $tickets = $stmt->get_result();
+endif;
 
+// Get full list of open tickets if user is Support
+if ($userdata['AccessLevel'] === 'Support'):
+    $tickets_query = "SELECT * FROM tickets, ticketusers WHERE (tickets.ID = ticketusers.TicketID) AND tickets.Status = 'Open'";
+    $stmt = $mysqli->prepare($tickets_query);
+    $stmt->execute();
+    $tickets = $stmt->get_result();
+endif;
 
 if (isset($_GET['ticket_success']) && $_GET['ticket_success'] == '1') {
     echo "<script>alert('Ticket created successfully!');</script>";

@@ -34,27 +34,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             INSERT INTO Tickets (created_by, assigned_to, subject, description, priority) 
             VALUES (?, ?, ?, ?, ?)
         ");
-        $stmt->execute([
+        $stmt->bind_param("sssss",
             $createdBy,
             $assignedTo,
             $subject,
             $description,
-            $priority
-        ]);
+            $priority);
+        $stmt->execute();
 
         $ticketId = $mysqli->insert_id;
         $sql2 = "INSERT INTO TicketUsers (TicketID, UserID) VALUES (?, ?)";
         $stmt2 = $mysqli->prepare($sql2);
-        $stmt2->execute([
+        $stmt2->bind_param("is",
             $ticketId,
             $createdBy
-        ]);
+        );
+        $stmt2->execute();
 
         if ($assignedTo) {
-            $stmt2->execute([
+            $stmt2->bind_param("is",
                 $ticketId,
                 $assignedTo
-            ]);
+            );
+            $stmt2->execute();
         }
 
         header("Location: dashboard.php?ticket_success=1");

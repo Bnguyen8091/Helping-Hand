@@ -23,9 +23,7 @@ $stmt->bind_param("ii", $ticket_id, $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
-if ($result->num_rows === 0) {
-    die("You are not assigned to this ticket.");
-}
+
 
 // Pass variables to comment section
 include 'comments_section.php';
